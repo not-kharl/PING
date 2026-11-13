@@ -1,5 +1,6 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { lessons } from '../../data/lessons';
 import { colors } from '../../theme';
@@ -12,7 +13,22 @@ export default function LessonDetail() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Lesson' }} />
+      <Stack.Screen
+        options={{
+          title: 'Lesson',
+          headerLeft: () => (
+            <Pressable
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.replace('/')
+              }
+              hitSlop={12}
+              style={{ marginRight: 12 }}
+            >
+              <Ionicons name="arrow-back" size={24} color={colors.white} />
+            </Pressable>
+          ),
+        }}
+      />
       <ScrollView style={styles.screen}>
         <Animated.View entering={ZoomIn.duration(400)}>
           <View style={styles.hero}>
