@@ -2,12 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { lessons } from '../../data/lessons';
+import { useAuth } from '../../lib/auth';
 import { colors } from '../../theme';
 
 function Hero() {
+  const { user } = useAuth();
   return (
     <View style={styles.hero}>
-      <Text style={styles.heroSmall}>WELCOME, GUEST</Text>
+      <Text style={styles.heroSmall}>
+        WELCOME, {user ? user.name.toUpperCase() : 'GUEST'}
+      </Text>
       <Text style={styles.heroTitle}>NETWORKING{'\n'}FUNDAMENTALS</Text>
       <View style={styles.heroLine} />
     </View>

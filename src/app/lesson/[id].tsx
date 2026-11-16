@@ -1,40 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
-import NetworkBuilder from '../../components/NetworkBuilder';
 import { lessons } from '../../data/lessons';
 import { colors } from '../../theme';
 
 export default function LessonDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { width } = useWindowDimensions();
-  const wide = width >= 900;
   const lesson = lessons.find((l) => l.id === id);
 
   if (!lesson) return <Text style={{ padding: 20 }}>Lesson not found.</Text>;
-
-  const text = (
-    <View style={wide && lesson.interactive ? styles.left : undefined}>
-      <Text style={styles.label}>Topic</Text>
-      <Text style={styles.body}>{lesson.topic}</Text>
-
-      <Text style={styles.label}>Contents</Text>
-      {lesson.sections.map((s) => (
-        <View key={s.heading} style={styles.section}>
-          <Text style={styles.sectionTitle}>{s.heading}</Text>
-          <Text style={styles.body}>{s.body}</Text>
-        </View>
-      ))}
-    </View>
-  );
 
   return (
     <>
@@ -61,21 +36,28 @@ export default function LessonDetail() {
             <View style={styles.heroLine} />
           </View>
 
-          {lesson.interactive ? (
-            <View
-              style={[
-                styles.content,
-                wide ? styles.row : { gap: 16 },
-              ]}
-            >
-              {text}
-              <View style={wide ? styles.right : undefined}>
-                <NetworkBuilder />
+          <View style={styles.content}>
+            <Text style={styles.label}>Topic</Text>
+            <Text style={styles.body}>{lesson.topic}</Text>
+
+            {lesson.interactive && (
+              <Pressable
+                style={styles.playBtn}
+                onPress={() => router.navigate('/playground' as any)}
+              >
+                <Ionicons name="construct" size={18} color={colors.white} />
+                <Text style={styles.playText}>OPEN THE PLAYGROUND</Text>
+              </Pressable>
+            )}
+
+            <Text style={styles.label}>Contents</Text>
+            {lesson.sections.map((s) => (
+              <View key={s.heading} style={styles.section}>
+                <Text style={styles.sectionTitle}>{s.heading}</Text>
+                <Text style={styles.body}>{s.body}</Text>
               </View>
-            </View>
-          ) : (
-            <View style={styles.content}>{text}</View>
-          )}
+            ))}
+          </View>
         </Animated.View>
       </ScrollView>
     </>
@@ -99,9 +81,6 @@ const styles = StyleSheet.create({
   },
   heroLine: { width: 48, height: 3, backgroundColor: colors.orange, marginTop: 14 },
   content: { padding: 20 },
-  row: { flexDirection: 'row', gap: 24, alignItems: 'flex-start' },
-  left: { flex: 1 },
-  right: { flex: 1.2 },
   label: {
     fontSize: 12,
     fontWeight: '700',
@@ -111,6 +90,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 8,
   },
+  playBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.orange,
+    paddingVertical: 12,
+    borderRadius: 4,
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  playText: { color: colors.white, fontWeight: '700', letterSpacing: 2, fontSize: 13 },
   section: {
     backgroundColor: colors.white,
     borderLeftWidth: 4,
