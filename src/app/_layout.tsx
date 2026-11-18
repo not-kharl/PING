@@ -3,6 +3,10 @@ import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { colors } from '../theme';
 
+export const unstable_settings = {
+  initialRouteName: 'welcome',
+};
+
 function RootNav() {
   const { user, loading } = useAuth();
 
@@ -37,7 +41,7 @@ function RootNav() {
         />
       </Stack.Protected>
       <Stack.Protected guard={!user}>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
+      <Stack.Screen name="login" options={{ headerShown: false }} />
       </Stack.Protected>
     </Stack>
   );
