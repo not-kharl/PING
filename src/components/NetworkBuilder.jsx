@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useRef, useState } from 'react';
 import { PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, } from 'react-native';
 import { defaultSession, promptFor, runCommand } from '../lib/cli';
-import { addressesOf, newIfaces } from '../lib/network';
+import { addressesOf, newIfaces, pingCheck } from '../lib/network';
 import { colors } from '../theme';
-import { useEffect, useRef, useState } from 'react';
 
 const SIZE = 64;
 const MONO = Platform.select({
@@ -37,6 +37,7 @@ const INTRO = [
     'Tap a device on the canvas to open its console.',
     'Type "help" to see the commands.',
 ];
+
 function Cable({ a, b, color }) {
     const dx = b.x - a.x;
     const dy = b.y - a.y;
@@ -52,6 +53,7 @@ function Cable({ a, b, color }) {
             transform: [{ rotate: `${angle}rad` }],
         }}/>);
 }
+
 function DeviceNode(props) {
     const { device, selected } = props;
     const latest = useRef(props);
@@ -103,7 +105,8 @@ function DeviceNode(props) {
       </Text>
     </View>);
 }
-    export default function NetworkBuilder({ onStateChange }) {
+
+export default function NetworkBuilder({ onStateChange }) {
     const [devices, setDevices] = useState([]);
     const [links, setLinks] = useState([]);
     const [mode, setMode] = useState('move');
@@ -114,10 +117,15 @@ function DeviceNode(props) {
     const [sessions, setSessions] = useState({});
     const [log, setLog] = useState(INTRO);
     const [input, setInput] = useState('');
-        useEffect(() => {
-            onStateChange?.(devices, links);
-            // eslint-disable-next-line react-hooks/exhaustive-deps
-        }, [devices, links]);
+    const [pingOpen, setPingOpen] = useState(false);
+    const [pingSrcId, setPingSrcId] = useState(null);
+    const [pingDstKey, setPingDstKey] = useState(null);
+
+    useEffect(() => {
+        onStateChange?.(devices, links);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [devices, links]);
+
     const counters = useRef({ pc: 0, switch: 0, router: 0 });
     const devicesRef = useRef(devices);
     devicesRef.current = devices;
@@ -128,8 +136,30 @@ function DeviceNode(props) {
     const selectedRef = useRef(selectedId);
     selectedRef.current = selectedId;
     const termRef = useRef(null);
+
     const selected = devices.find((d) => d.id === selectedId) ?? null;
     const session = selected ? sessions[selected.id] ?? defaultSession : defaultSession;
+
+    // Ping panel: which PC sends, and which device/IP receives
+    const pcs = devices.filter((d) => d.kind === 'pc');
+    const pingSrc = pcs.find((d) => d.id === pingSrcId) ||
+        (selected && selected.kind === 'pc' ? selected : null) ||
+        pcs[0] ||
+        null;
+    const pingTargets = [];
+    devices.forEach((d) => {
+        if (!pingSrc || d.id === pingSrc.id || d.kind === 'switch')
+            return;
+        const addrs = addressesOf(d);
+        if (addrs.length === 0) {
+            pingTargets.push({ key: d.id, label: `${d.name} (no active IP)`, ip: null });
+        }
+        else {
+            addrs.forEach((a) => pingTargets.push({ key: `${d.id}-${a.ip}`, label: `${d.name} - ${a.ip}`, ip: a.ip }));
+        }
+    });
+    const pingDst = pingTargets.find((t) => t.key === pingDstKey && t.ip) || null;
+
     const center = (id) => {
         const d = devices.find((x) => x.id === id);
         return d ? { x: d.x + SIZE / 2, y: d.y + SIZE / 2 } : null;
@@ -207,19 +237,42 @@ function DeviceNode(props) {
         exec(selected, input);
         setInput('');
     };
-    const quickPing = () => {
-        const pcs = devices.filter((d) => d.kind === 'pc');
-        if (pcs.length < 2) {
-            setMessage('Add at least two PCs to test a ping.');
+    const sendPing = () => {
+        if (!pingSrc) {
+            setMessage('Add a PC first.');
             return;
         }
-        const [src, dst] = pcs;
-        if (!dst.ip) {
-            setMessage(`${dst.name} has no IP yet. Tap it and type: ipconfig <ip> <mask>`);
+        if (!pingDst) {
+            setMessage('Choose a device to ping.');
             return;
         }
-        select(src.id);
-        exec(src, `ping ${dst.ip}`);
+        select(pingSrc.id);
+        exec(pingSrc, `ping ${pingDst.ip}`);
+        const r = pingCheck(pingSrc, pingDst.ip, devices, links);
+        setMessage(r.ok
+            ? `Ping ${pingSrc.name} to ${pingDst.name}: reply received. Success!`
+            : `Ping ${pingSrc.name} to ${pingDst.name}: request timed out. ${r.hint}`);
+    };
+    const deleteSelected = () => {
+        if (!selectedId) {
+            setMessage('Tap a device first, then press Delete.');
+            return;
+        }
+        const dev = devices.find((d) => d.id === selectedId);
+        if (!dev)
+            return;
+        setDevices(devices.filter((d) => d.id !== selectedId));
+        setLinks(links.filter((l) => l.a !== selectedId && l.b !== selectedId));
+        setSessions((s) => {
+            const next = { ...s };
+            delete next[selectedId];
+            return next;
+        });
+        selectedRef.current = null;
+        setSelectedId(null);
+        setDrag(null);
+        setLog((p) => [...p, `--- ${dev.name} deleted ---`]);
+        setMessage(`${dev.name} deleted along with its cables.`);
     };
     const clear = () => {
         setDevices([]);
@@ -235,6 +288,7 @@ function DeviceNode(props) {
     const onLayout = (e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
     const dragFrom = drag ? center(drag.from) : null;
     const groups = ['On a PC', 'On a Router / Switch'];
+
     return (<View style={styles.wrap}>
       <Text style={styles.heading}>Network Builder</Text>
 
@@ -252,13 +306,52 @@ function DeviceNode(props) {
         <Pressable style={[styles.btn, mode === 'cable' && styles.btnActive]} onPress={() => setMode('cable')}>
           <Text style={styles.btnText}>Cable</Text>
         </Pressable>
-        <Pressable style={styles.btn} onPress={quickPing}>
-          <Text style={styles.btnText}>Ping PC1 to PC2</Text>
+        <Pressable style={[styles.btn, selected ? styles.btnDanger : { opacity: 0.45 }]} onPress={deleteSelected}>
+          <Ionicons name="trash" size={16} color={colors.white}/>
+          <Text style={styles.btnText}>Delete{selected ? ` ${selected.name}` : ''}</Text>
+        </Pressable>
+        <Pressable style={[styles.btn, pingOpen && styles.btnActive]} onPress={() => setPingOpen(!pingOpen)}>
+          <Ionicons name="pulse" size={16} color={colors.white}/>
+          <Text style={styles.btnText}>Ping</Text>
         </Pressable>
         <Pressable style={styles.btn} onPress={clear}>
           <Text style={styles.btnText}>Clear</Text>
         </Pressable>
       </View>
+
+      {pingOpen && (<View style={styles.pingBox}>
+          {pcs.length === 0 ? (<Text style={styles.hint}>Add at least one PC to send a ping.</Text>) : (<>
+              <Text style={styles.pingLabel}>From (PC)</Text>
+              <View style={styles.chipRow}>
+                {pcs.map((d) => (<Pressable key={d.id} onPress={() => setPingSrcId(d.id)} style={[styles.chip, pingSrc?.id === d.id && styles.chipActive]}>
+                    <Text style={[styles.chipText, pingSrc?.id === d.id && { color: colors.white }]}>
+                      {d.name}
+                    </Text>
+                  </Pressable>))}
+              </View>
+
+              <Text style={styles.pingLabel}>To</Text>
+              <View style={styles.chipRow}>
+                {pingTargets.length === 0 ? (<Text style={styles.hint}>Add another PC or a router to ping.</Text>) : (pingTargets.map((t) => (<Pressable key={t.key} disabled={!t.ip} onPress={() => setPingDstKey(t.key)} style={[
+                    styles.chip,
+                    pingDst?.key === t.key && styles.chipActive,
+                    !t.ip && { opacity: 0.45 },
+                ]}>
+                      <Text style={[styles.chipText, pingDst?.key === t.key && { color: colors.white }]}>
+                        {t.label}
+                      </Text>
+                    </Pressable>)))}
+              </View>
+
+              <Pressable style={[styles.btn, styles.btnActive, { alignSelf: 'flex-start', marginTop: 4 }, !pingDst && { opacity: 0.5 }]} onPress={sendPing}>
+                <Ionicons name="paper-plane" size={16} color={colors.white}/>
+                <Text style={styles.btnText}>Send ping</Text>
+              </Pressable>
+              <Text style={styles.hint}>
+                Set IP addresses first (tap a PC and use ipconfig), then cable the devices.
+              </Text>
+            </>)}
+        </View>)}
 
       <View style={[styles.canvas, { userSelect: 'none' }]} onLayout={onLayout}>
         {links.map((l, i) => {
@@ -308,6 +401,7 @@ function DeviceNode(props) {
       </View>
     </View>);
 }
+
 const styles = StyleSheet.create({
     wrap: {
         backgroundColor: colors.white,
@@ -335,7 +429,36 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     btnActive: { backgroundColor: colors.orange },
+    btnDanger: { backgroundColor: '#c62828' },
     btnText: { color: colors.white, fontSize: 13, fontWeight: '600' },
+    pingBox: {
+        backgroundColor: colors.bgLight,
+        borderWidth: 1,
+        borderColor: colors.gray,
+        borderRadius: 6,
+        padding: 12,
+        marginTop: 4,
+        marginBottom: 8,
+        gap: 8,
+    },
+    pingLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: colors.orange,
+        letterSpacing: 2,
+        textTransform: 'uppercase',
+    },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    chip: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: colors.gray,
+        backgroundColor: colors.white,
+    },
+    chipActive: { backgroundColor: colors.orange, borderColor: colors.orange },
+    chipText: { fontSize: 13, fontWeight: '600', color: colors.navy },
     canvas: {
         height: 360,
         backgroundColor: colors.navyDark,

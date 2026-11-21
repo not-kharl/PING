@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import AdminTracker from '../../components/AdminTracker';
 import ProgressCard from '../../components/ProgressCard';
 import Reference from '../../components/Reference';
 import { useAuth } from '../../lib/auth';
@@ -27,7 +28,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <ProgressCard />
+      {isAdmin ? <AdminTracker /> : <ProgressCard />}
 
       <Pressable style={styles.logout} onPress={signOut}>
         <Text style={styles.logoutText}>LOG OUT</Text>

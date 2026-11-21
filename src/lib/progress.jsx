@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-    createContext,
-    useCallback,
-    useContext,
-    useEffect,
-    useRef,
-    useState,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
 } from 'react';
 import { useAuth } from './auth';
 
@@ -100,8 +100,9 @@ export function ProgressProvider({ children }) {
 
   const done = KEYS.filter((k) => data[k]).length;
   const percent = Math.round((done / KEYS.length) * 100);
-  // Quiz N unlocks once Module N has been viewed
-  const isUnlocked = (quizId) => !!data[`lesson${quizId}`];
+  
+  const isUnlocked = (quizId) =>
+    user?.role === 'admin' || !!data[`lesson${quizId}`];
 
   return (
     <ProgressContext.Provider
