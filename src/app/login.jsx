@@ -1,8 +1,9 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, } from 'react-native';
 import { useAuth } from '../lib/auth';
 import { colors } from '../theme';
-import { useLocalSearchParams } from 'expo-router';
+
 export default function Login() {
     const { signIn, signUp } = useAuth();
     const { mode } = useLocalSearchParams();

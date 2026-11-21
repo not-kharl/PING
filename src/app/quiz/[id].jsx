@@ -1,10 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import LabChallenge from '../../components/LabChallenge';
 import { quizzes } from '../../data/quizzes';
 import { useProgress } from '../../lib/progress';
-import LabChallenge from '../../components/LabChallenge';
 import { colors } from '../../theme';
 
 export default function QuizScreen() {
@@ -54,7 +54,7 @@ export default function QuizScreen() {
       </>
     );
 
-  // Security gate: the lesson must have been viewed first
+  // Security gate: the module must have been viewed first
   if (!isUnlocked(quiz.id))
     return (
       <>
@@ -63,7 +63,7 @@ export default function QuizScreen() {
           <Ionicons name="lock-closed" size={44} color={colors.orange} />
           <Text style={styles.lockTitle}>This quiz is locked</Text>
           <Text style={styles.muted}>
-            View Lesson {quiz.lessonId} first, then come back to take the quiz.
+            View Module {quiz.lessonId} first, then come back to take the quiz.
           </Text>
           <Pressable
             style={styles.primary}
@@ -74,7 +74,7 @@ export default function QuizScreen() {
               })
             }
           >
-            <Text style={styles.primaryText}>GO TO LESSON {quiz.lessonId}</Text>
+            <Text style={styles.primaryText}>GO TO MODULE {quiz.lessonId}</Text>
           </Pressable>
         </View>
       </>

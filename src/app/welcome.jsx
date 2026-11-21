@@ -2,13 +2,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-    useWindowDimensions,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
 } from 'react-native';
 import { lessons } from '../data/lessons';
 import { colors } from '../theme';
@@ -180,7 +180,7 @@ export default function Welcome() {
                 <Text style={styles.link}>Try It</Text>
               </Pressable>
               <Pressable onPress={() => jump('modules')}>
-                <Text style={styles.link}>Lessons</Text>
+                <Text style={styles.link}>Modules</Text>
               </Pressable>
             </View>
           )}
@@ -209,7 +209,7 @@ export default function Welcome() {
               <View style={styles.stats}>
                 <View>
                   <Text style={styles.statNum}>{lessons.length}</Text>
-                  <Text style={styles.statLabel}>Core Lessons</Text>
+                  <Text style={styles.statLabel}>Core Modules</Text>
                 </View>
                 <View>
                   <Text style={styles.statNum}>100%</Text>
@@ -347,10 +347,10 @@ export default function Welcome() {
           {lessons.map((l, i) => (
             <View key={l.id} style={styles.module}>
               <View style={styles.modTag}>
-                <Text style={styles.modTagText}>LESSON {i + 1}</Text>
+                <Text style={styles.modTagText}>MODULE {i + 1}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>{l.title.replace(/^Lesson \d+ - /, '')}</Text>
+                <Text style={styles.cardTitle}>{l.title.replace(/^Module \d+ - /, '')}</Text>
                 <Text style={styles.cardBody}>{l.topic}</Text>
               </View>
             </View>
