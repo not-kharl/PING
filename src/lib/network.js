@@ -1,7 +1,7 @@
 export const ROUTER_PORTS = [
-    'GigabitEthernet0/0',
-    'GigabitEthernet0/1',
-    'GigabitEthernet0/2',
+    'GigabitEthernet0/0/0',
+    'GigabitEthernet0/0/1',
+    'GigabitEthernet0/0/2',
 ];
 // Cisco router ports start shut down, so they start with up: false
 export function newIfaces(kind) {

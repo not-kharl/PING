@@ -1,9 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import NetworkBuilder from './NetworkBuilder';
 import { pingCheck } from '../lib/network';
 import { colors } from '../theme';
+import NetworkBuilder from './NetworkBuilder';
 
 const GATEWAY = '192.168.10.1';
 const MASK = '255.255.255.0';
@@ -50,7 +50,7 @@ const TASKS = [
     },
     {
         title: 'Configure the router port',
-        hint: `Tap the router and type, one line at a time: enable, configure terminal, interface g0/0, ip address ${GATEWAY} ${MASK}, no shutdown`,
+        hint: `Tap the router and type, one line at a time: enable, configure terminal, g0/0/0, ip address ${GATEWAY} ${MASK}, no shutdown`,
         check: ({ router }) =>
             !!router &&
             Object.values(router.ifaces).some(

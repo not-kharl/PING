@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, } from 'react-native';
 import { defaultSession, promptFor, runCommand } from '../lib/cli';
 import { addressesOf, newIfaces, pingCheck } from '../lib/network';
+import { firstFreePort, shortPort } from '../lib/ports';
 import { colors } from '../theme';
 
 const SIZE = 64;
@@ -28,11 +29,12 @@ const COMMANDS = [
     { group: 'On a PC', cmd: 'ipconfig', desc: 'Show the IP settings' },
     { group: 'On a PC', cmd: 'ipconfig 192.168.1.2 255.255.255.0', desc: 'Set IP address and subnet mask' },
     { group: 'On a PC', cmd: 'ipconfig 192.168.1.2 255.255.255.0 192.168.1.1', desc: 'Same, plus a default gateway' },
+    { group: 'On a PC', cmd: 'hostname Office-PC', desc: 'Rename this PC' },
     { group: 'On a PC', cmd: 'ping 192.168.1.3', desc: 'Test the connection to another device' },
     { group: 'On a Router / Switch', cmd: 'enable', desc: 'Enter privileged mode (Router#)' },
     { group: 'On a Router / Switch', cmd: 'configure terminal', desc: 'Enter global configuration' },
-    { group: 'On a Router / Switch', cmd: 'hostname R1', desc: 'Rename the device' },
-    { group: 'On a Router / Switch', cmd: 'interface g0/0', desc: 'Select a router port' },
+    { group: 'On a Router / Switch', cmd: 'hostname R1', desc: 'Rename the device (global config mode)' },
+    { group: 'On a Router / Switch', cmd: 'interface g0/0/0', desc: 'Select a router port' },
     { group: 'On a Router / Switch', cmd: 'ip address 192.168.1.1 255.255.255.0', desc: 'Set the port\'s IP address' },
     { group: 'On a Router / Switch', cmd: 'no shutdown', desc: 'Turn the port on' },
     { group: 'On a Router / Switch', cmd: 'exit', desc: 'Go back one level' },
@@ -60,6 +62,27 @@ function Cable({ a, b, color }) {
             backgroundColor: color,
             transform: [{ rotate: `${angle}rad` }],
         }}/>);
+}
+
+// Where to put a port label: on the cable, just outside the device box
+function portLabelPos(from, to) {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    const exit = SIZE / 2 / Math.max(Math.abs(ux), Math.abs(uy), 0.001);
+    const t = Math.min(exit + 22, len / 2);
+    return { x: from.x + ux * t, y: from.y + uy * t };
+}
+
+function PortLabel({ at, text, up }) {
+    return (<View pointerEvents="none" style={[styles.portWrap, { left: at.x - 36, top: at.y - 8 }]}>
+      <View style={styles.portChip}>
+        <View style={[styles.linkDot, { backgroundColor: up ? '#2ecc71' : '#e53935' }]}/>
+        <Text style={styles.portText}>{text}</Text>
+      </View>
+    </View>);
 }
 
 function DeviceNode(props) {
@@ -205,6 +228,15 @@ export default function NetworkBuilder({ onStateChange }) {
         const d = devices.find((x) => x.id === id);
         return d ? { x: d.x + SIZE / 2, y: d.y + SIZE / 2 } : null;
     };
+
+    // A link is "down" (red) while a router port it uses is shut down
+    const linkUp = (l) => [[l.a, l.aPort], [l.b, l.bPort]].every(([id, port]) => {
+        const d = devices.find((x) => x.id === id);
+        if (!d || d.kind !== 'router')
+            return true;
+        return !!d.ifaces[port]?.up;
+    });
+
     const select = (id) => {
         if (id === selectedRef.current)
             return;
@@ -215,15 +247,20 @@ export default function NetworkBuilder({ onStateChange }) {
             setLog((p) => [...p, `--- Console: ${d.name} ---`]);
     };
     const addDevice = (kind) => {
-        counters.current[kind] += 1;
-        const n = devices.length;
+        // Pick the next number whose name is not already taken (a device may have been renamed)
+        let n = counters.current[kind] + 1;
+        const taken = (name) => devices.some((d) => d.name.toLowerCase() === name.toLowerCase());
+        while (taken(`${META[kind].prefix}${n}`))
+            n += 1;
+        counters.current[kind] = n;
+        const idx = devices.length;
         const perRow = Math.max(3, Math.floor((sizeRef.current.w - 16) / 80));
         const device = {
-            id: `${kind}${counters.current[kind]}`,
+            id: `${kind}${n}`,
             kind,
-            name: `${META[kind].prefix}${counters.current[kind]}`,
-            x: 16 + (n % perRow) * 80,
-            y: 16 + Math.floor(n / perRow) * 92,
+            name: `${META[kind].prefix}${n}`,
+            x: 16 + (idx % perRow) * 80,
+            y: 16 + Math.floor(idx / perRow) * 92,
             ifaces: newIfaces(kind),
         };
         setDevices([...devices, device]);
@@ -241,12 +278,13 @@ export default function NetworkBuilder({ onStateChange }) {
     const dragCable = (id, to) => setDrag({ from: id, to });
     const endCable = (fromId, point) => {
         setDrag(null);
+        const fromDev = devicesRef.current.find((d) => d.id === fromId);
         const target = devicesRef.current.find((d) => d.id !== fromId &&
             point.x >= d.x &&
             point.x <= d.x + SIZE &&
             point.y >= d.y &&
             point.y <= d.y + SIZE);
-        if (!target) {
+        if (!fromDev || !target) {
             setMessage('Drop the cable onto another device.');
             return;
         }
@@ -255,9 +293,19 @@ export default function NetworkBuilder({ onStateChange }) {
             setMessage('Those devices are already connected.');
             return;
         }
-        setLinks([...linksRef.current, { a: fromId, b: target.id }]);
-        const fromName = devicesRef.current.find((d) => d.id === fromId)?.name;
-        setMessage(`Connected ${fromName} to ${target.name}.`);
+        // Each end takes the first free port, like plugging into the next open port
+        const aPort = firstFreePort(fromDev, linksRef.current);
+        const bPort = firstFreePort(target, linksRef.current);
+        if (!aPort) {
+            setMessage(`${fromDev.name} has no free port left.`);
+            return;
+        }
+        if (!bPort) {
+            setMessage(`${target.name} has no free port left.`);
+            return;
+        }
+        setLinks([...linksRef.current, { a: fromId, b: target.id, aPort, bPort }]);
+        setMessage(`Connected ${fromDev.name} ${shortPort(aPort)} to ${target.name} ${shortPort(bPort)}.`);
     };
     const exec = (dev, cmd) => {
         const sess = sessions[dev.id] ?? defaultSession;
@@ -270,6 +318,9 @@ export default function NetworkBuilder({ onStateChange }) {
         setDevices(res.devices);
         setSessions((s) => ({ ...s, [dev.id]: res.session }));
         setLog((p) => (res.clear ? [] : [...p, line, ...res.out]));
+        const newName = res.devices.find((d) => d.id === dev.id)?.name;
+        if (newName && newName !== dev.name)
+            setMessage(`${dev.name} renamed to ${newName}.`);
     };
     const submit = () => {
         if (!selected) {
@@ -412,6 +463,17 @@ export default function NetworkBuilder({ onStateChange }) {
             return a && b ? <Cable key={i} a={a} b={b} color={colors.orange}/> : null;
         })}
         {drag && dragFrom && <Cable a={dragFrom} b={drag.to} color={colors.muted}/>}
+        {links.map((l, i) => {
+            const a = center(l.a);
+            const b = center(l.b);
+            if (!a || !b || !l.aPort || !l.bPort)
+                return null;
+            const up = linkUp(l);
+            return (<View key={`ports-${i}`} pointerEvents="none" style={StyleSheet.absoluteFill}>
+              <PortLabel at={portLabelPos(a, b)} text={shortPort(l.aPort)} up={up}/>
+              <PortLabel at={portLabelPos(b, a)} text={shortPort(l.bPort)} up={up}/>
+            </View>);
+        })}
         {devices.map((d) => (<DeviceNode key={d.id} device={d} selected={d.id === selectedId} mode={mode} onSelect={select} onMove={moveDevice} onCableDrag={dragCable} onCableEnd={endCable}/>))}
         {devices.length === 0 && (<Text style={[styles.empty, { marginTop: Math.max(100, canvasH / 2 - 20) }]}>
             Tap "+ PC", "+ Switch" or "+ Router"
@@ -429,7 +491,9 @@ export default function NetworkBuilder({ onStateChange }) {
 
       <Text style={styles.message}>{message}</Text>
       <Text style={styles.hint}>
-        Move mode: drag devices. Cable mode: drag from one device onto another.
+        Move mode: drag devices. Cable mode: drag from one device onto another. Each cable shows
+        its port at both ends. A red dot means the port is down (routers start shut down, so use
+        no shutdown).
       </Text>
 
       {/* CLI */}
@@ -560,6 +624,20 @@ const styles = StyleSheet.create({
     },
     grip: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.muted },
     handleText: { fontSize: 10, color: colors.muted, letterSpacing: 1 },
+    portWrap: { position: 'absolute', width: 72, alignItems: 'center' },
+    portChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        backgroundColor: colors.navyDark,
+        borderWidth: 1,
+        borderColor: '#2b3d52',
+        borderRadius: 3,
+        paddingHorizontal: 3,
+        paddingVertical: 1,
+    },
+    linkDot: { width: 7, height: 7, borderRadius: 4 },
+    portText: { color: colors.white, fontSize: 9, fontWeight: '600' },
     nodeWrap: { position: 'absolute', width: SIZE, alignItems: 'center' },
     node: {
         width: SIZE,
