@@ -181,7 +181,7 @@ export const lessons = [
         },
         {
           heading: 'Cisco IOS modes',
-          body: 'Cisco devices run IOS. User EXEC (Router>) is limited. Privileged EXEC (Router#) is entered with "enable". Global config (Router(config)#) is entered with "configure terminal". Interface config (Router(config-if)#) is entered with "interface g0/0". Commands can be shortened, like "en" or "conf t".',
+          body: 'Cisco devices run IOS. User EXEC (Router>) is limited. Privileged EXEC (Router#) is entered with "enable". Global config (Router(config)#) is entered with "configure terminal". Interface config (Router(config-if)#) is entered with "interface g0/0/0". Commands can be shortened, like "en" or "conf t".',
         },
         {
           heading: 'Using the console',
@@ -193,7 +193,7 @@ export const lessons = [
         },
         {
           heading: 'Try it 2: two networks with a router',
-          body: 'In the Playground tab:\n1. Add PC1, PC2 and R1. Cable PC1 to R1 and PC2 to R1.\n2. On R1 type: enable, configure terminal, interface g0/0, ip address 192.168.1.1 255.255.255.0, no shutdown, exit.\n3. Then: interface g0/1, ip address 192.168.2.1 255.255.255.0, no shutdown, end.\n4. PC1: ipconfig 192.168.1.2 255.255.255.0 192.168.1.1\n5. PC2: ipconfig 192.168.2.2 255.255.255.0 192.168.2.1\n6. On PC1 type: ping 192.168.2.2. Use "show ip interface brief" on R1 to check the ports.',
+          body: 'In the Playground tab:\n1. Add PC1, PC2 and R1. Cable PC1 to R1 and PC2 to R1.\n2. On R1 type: enable, configure terminal, interface g0/0/0, ip address 192.168.1.1 255.255.255.0, no shutdown, exit.\n3. Then: interface g0/0/1, ip address 192.168.2.1 255.255.255.0, no shutdown, end.\n4. PC1: ipconfig 192.168.1.2 255.255.255.0 192.168.1.1\n5. PC2: ipconfig 192.168.2.2 255.255.255.0 192.168.2.1\n6. On PC1 type: ping 192.168.2.2. Use "show ip interface brief" on R1 to check the ports.',
         },
       ],
     },

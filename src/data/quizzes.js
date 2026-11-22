@@ -265,7 +265,7 @@ export const quizzes = [
       questions: [
         {
           q: 'Which command moves you from Router> to Router#?',
-          options: ['configure terminal', 'enable', 'interface g0/0', 'exit'],
+          options: ['configure terminal', 'enable', 'interface g0/0/0/0', 'exit'],
           answer: 1,
           explain: '"enable" enters Privileged EXEC mode (Router#).',
         },
