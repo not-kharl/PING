@@ -1,7 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import AdminTracker from '../../components/AdminTracker';
 import ProgressCard from '../../components/ProgressCard';
-import Reference from '../../components/Reference';
 import { useAuth } from '../../lib/auth';
 import { colors } from '../../theme';
 
@@ -33,10 +32,6 @@ export default function ProfileScreen() {
       <Pressable style={styles.logout} onPress={signOut}>
         <Text style={styles.logoutText}>LOG OUT</Text>
       </Pressable>
-
-      <View style={styles.footer}>
-        <Reference />
-      </View>
     </ScrollView>
   );
 }
@@ -72,5 +67,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutText: { color: colors.white, fontWeight: '700', letterSpacing: 2 },
-  footer: { marginTop: 'auto', alignItems: 'flex-end', paddingTop: 12 },
 });

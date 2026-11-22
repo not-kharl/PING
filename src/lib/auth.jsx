@@ -1,9 +1,41 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { createContext, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 
 const USERS_KEY = 'ping.users';
 const SESSION_KEY = 'ping.session';
+
+// The login session lives only as long as the browser tab:
+// a refresh keeps it, closing the tab (or the browser) clears it.
+// On phones the session is not saved, so the app starts at the welcome page.
+const sessionStore = {
+  get() {
+    try {
+      if (Platform.OS === 'web' && typeof sessionStorage !== 'undefined')
+        return sessionStorage.getItem(SESSION_KEY);
+    } catch {
+      // storage blocked: treat as signed out
+    }
+    return null;
+  },
+  set(value) {
+    try {
+      if (Platform.OS === 'web' && typeof sessionStorage !== 'undefined')
+        sessionStorage.setItem(SESSION_KEY, value);
+    } catch {
+      // storage blocked: the session just won't survive a refresh
+    }
+  },
+  remove() {
+    try {
+      if (Platform.OS === 'web' && typeof sessionStorage !== 'undefined')
+        sessionStorage.removeItem(SESSION_KEY);
+    } catch {
+      // nothing to clear
+    }
+  },
+};
 
 const hashPassword = (salt, password) =>
   Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, salt + password);
@@ -52,7 +84,11 @@ export function AuthProvider({ children }) {
           list = [await makeUser('Administrator', 'admin', 'admin123', 'admin')];
           await AsyncStorage.setItem(USERS_KEY, JSON.stringify(list));
         }
-        const sid = await AsyncStorage.getItem(SESSION_KEY);
+        // Remove the old long-lived session from earlier versions
+        await AsyncStorage.removeItem(SESSION_KEY);
+
+        // Restore the login only if this same tab was already signed in
+        const sid = sessionStore.get();
         setStored(list);
         setUserId(sid && list.some((u) => u.id === sid) ? sid : null);
       } catch {
@@ -72,7 +108,7 @@ export function AuthProvider({ children }) {
     if (!found) return 'Wrong username or password.';
     if ((await hashPassword(found.salt, password)) !== found.hash)
       return 'Wrong username or password.';
-    await AsyncStorage.setItem(SESSION_KEY, found.id);
+    sessionStore.set(found.id);
     setUserId(found.id);
     return null;
   };
@@ -86,13 +122,13 @@ export function AuthProvider({ children }) {
     if (stored.some((u) => u.username === uname)) return 'That username is taken.';
     const created = await makeUser(name, uname, password, 'student');
     await persist([...stored, created]);
-    await AsyncStorage.setItem(SESSION_KEY, created.id);
+    sessionStore.set(created.id);
     setUserId(created.id);
     return null;
   };
 
   const signOut = async () => {
-    await AsyncStorage.removeItem(SESSION_KEY);
+    sessionStore.remove();
     setUserId(null);
   };
 
