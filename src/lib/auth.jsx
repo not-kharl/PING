@@ -54,13 +54,15 @@ async function makeUser(name, username, password, role) {
 }
 
 // Public view of an account (never exposes the password hash)
-const toUser = (u) => ({
-  id: u.id,
-  username: u.username,
-  name: u.name,
-  role: u.role,
-  createdAt: u.createdAt ?? null,
-});
+function toUser(u) {
+  return {
+    id: u.id,
+    username: u.username,
+    name: u.name,
+    role: u.role,
+    createdAt: u.createdAt ?? null,
+  };
+}
 
 const AuthContext = createContext(null);
 
@@ -84,6 +86,16 @@ export function AuthProvider({ children }) {
           list = [await makeUser('Administrator', 'admin', 'admin123', 'admin')];
           await AsyncStorage.setItem(USERS_KEY, JSON.stringify(list));
         }
+
+        // Accounts created before dates were tracked get today's date and time
+        // (the moment they were first recorded). Accounts that already have a
+        // date are left untouched.
+        if (list.some((u) => !u.createdAt)) {
+          const stamp = new Date().toISOString();
+          list = list.map((u) => (u.createdAt ? u : { ...u, createdAt: stamp }));
+          await AsyncStorage.setItem(USERS_KEY, JSON.stringify(list));
+        }
+
         // Remove the old long-lived session from earlier versions
         await AsyncStorage.removeItem(SESSION_KEY);
 

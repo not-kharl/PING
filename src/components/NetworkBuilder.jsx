@@ -6,6 +6,14 @@ import { addressesOf, newIfaces, pingCheck } from '../lib/network';
 import { colors } from '../theme';
 
 const SIZE = 64;
+const MIN_H = 260;
+const MAX_H = 1600;
+const SIZES = [
+    { label: 'Small', h: 360 },
+    { label: 'Medium', h: 520 },
+    { label: 'Large', h: 720 },
+    { label: 'XL', h: 960 },
+];
 const MONO = Platform.select({
     ios: 'Menlo',
     android: 'monospace',
@@ -111,6 +119,7 @@ export default function NetworkBuilder({ onStateChange }) {
     const [links, setLinks] = useState([]);
     const [mode, setMode] = useState('move');
     const [drag, setDrag] = useState(null);
+    const [canvasH, setCanvasH] = useState(360);
     const [size, setSize] = useState({ w: 320, h: 360 });
     const [message, setMessage] = useState('Add devices, then connect them with cables.');
     const [selectedId, setSelectedId] = useState(null);
@@ -126,6 +135,23 @@ export default function NetworkBuilder({ onStateChange }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [devices, links]);
 
+    // Keep every device inside the canvas when it gets smaller
+    useEffect(() => {
+        setDevices((prev) => {
+            let changed = false;
+            const next = prev.map((d) => {
+                const x = Math.max(0, Math.min(size.w - SIZE, d.x));
+                const y = Math.max(0, Math.min(size.h - SIZE - 16, d.y));
+                if (x !== d.x || y !== d.y) {
+                    changed = true;
+                    return { ...d, x, y };
+                }
+                return d;
+            });
+            return changed ? next : prev;
+        });
+    }, [size.w, size.h]);
+
     const counters = useRef({ pc: 0, switch: 0, router: 0 });
     const devicesRef = useRef(devices);
     devicesRef.current = devices;
@@ -136,6 +162,21 @@ export default function NetworkBuilder({ onStateChange }) {
     const selectedRef = useRef(selectedId);
     selectedRef.current = selectedId;
     const termRef = useRef(null);
+
+    // Drag handle under the canvas: pull down to make it taller, up to make it shorter
+    const heightRef = useRef(canvasH);
+    heightRef.current = canvasH;
+    const resizeStart = useRef(360);
+    const resizer = useRef(PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: () => {
+            resizeStart.current = heightRef.current;
+        },
+        onPanResponderMove: (_, g) => {
+            setCanvasH(Math.max(MIN_H, Math.min(MAX_H, Math.round(resizeStart.current + g.dy))));
+        },
+    })).current;
 
     const selected = devices.find((d) => d.id === selectedId) ?? null;
     const session = selected ? sessions[selected.id] ?? defaultSession : defaultSession;
@@ -176,12 +217,13 @@ export default function NetworkBuilder({ onStateChange }) {
     const addDevice = (kind) => {
         counters.current[kind] += 1;
         const n = devices.length;
+        const perRow = Math.max(3, Math.floor((sizeRef.current.w - 16) / 80));
         const device = {
             id: `${kind}${counters.current[kind]}`,
             kind,
             name: `${META[kind].prefix}${counters.current[kind]}`,
-            x: 16 + (n % 3) * 80,
-            y: 16 + Math.floor(n / 3) * 92,
+            x: 16 + (n % perRow) * 80,
+            y: 16 + Math.floor(n / perRow) * 92,
             ifaces: newIfaces(kind),
         };
         setDevices([...devices, device]);
@@ -319,6 +361,16 @@ export default function NetworkBuilder({ onStateChange }) {
         </Pressable>
       </View>
 
+      <View style={styles.sizeRow}>
+        <Ionicons name="expand" size={14} color={colors.muted}/>
+        <Text style={styles.sizeLabel}>Canvas size</Text>
+        {SIZES.map((s) => (<Pressable key={s.label} onPress={() => setCanvasH(s.h)} style={[styles.chip, canvasH === s.h && styles.chipActive]}>
+            <Text style={[styles.chipText, canvasH === s.h && { color: colors.white }]}>
+              {s.label}
+            </Text>
+          </Pressable>))}
+      </View>
+
       {pingOpen && (<View style={styles.pingBox}>
           {pcs.length === 0 ? (<Text style={styles.hint}>Add at least one PC to send a ping.</Text>) : (<>
               <Text style={styles.pingLabel}>From (PC)</Text>
@@ -353,7 +405,7 @@ export default function NetworkBuilder({ onStateChange }) {
             </>)}
         </View>)}
 
-      <View style={[styles.canvas, { userSelect: 'none' }]} onLayout={onLayout}>
+      <View style={[styles.canvas, { height: canvasH, userSelect: 'none' }]} onLayout={onLayout}>
         {links.map((l, i) => {
             const a = center(l.a);
             const b = center(l.b);
@@ -361,7 +413,18 @@ export default function NetworkBuilder({ onStateChange }) {
         })}
         {drag && dragFrom && <Cable a={dragFrom} b={drag.to} color={colors.muted}/>}
         {devices.map((d) => (<DeviceNode key={d.id} device={d} selected={d.id === selectedId} mode={mode} onSelect={select} onMove={moveDevice} onCableDrag={dragCable} onCableEnd={endCable}/>))}
-        {devices.length === 0 && (<Text style={styles.empty}>Tap "+ PC", "+ Switch" or "+ Router"</Text>)}
+        {devices.length === 0 && (<Text style={[styles.empty, { marginTop: Math.max(100, canvasH / 2 - 20) }]}>
+            Tap "+ PC", "+ Switch" or "+ Router"
+          </Text>)}
+      </View>
+
+      {/* Drag this bar up or down to resize the canvas */}
+      <View {...resizer.panHandlers} style={[
+            styles.handle,
+            Platform.OS === 'web' ? { cursor: 'ns-resize', touchAction: 'none' } : null,
+        ]}>
+        <View style={styles.grip}/>
+        <Text style={styles.handleText}>Drag to resize - {Math.round(canvasH)}px</Text>
       </View>
 
       <Text style={styles.message}>{message}</Text>
@@ -431,6 +494,21 @@ const styles = StyleSheet.create({
     btnActive: { backgroundColor: colors.orange },
     btnDanger: { backgroundColor: '#c62828' },
     btnText: { color: colors.white, fontSize: 13, fontWeight: '600' },
+    sizeRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 6,
+    },
+    sizeLabel: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: colors.muted,
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+        marginRight: 4,
+    },
     pingBox: {
         backgroundColor: colors.bgLight,
         borderWidth: 1,
@@ -462,10 +540,26 @@ const styles = StyleSheet.create({
     canvas: {
         height: 360,
         backgroundColor: colors.navyDark,
-        borderRadius: 6,
+        borderTopLeftRadius: 6,
+        borderTopRightRadius: 6,
         overflow: 'hidden',
         marginTop: 4,
     },
+    handle: {
+        height: 22,
+        backgroundColor: colors.bgLight,
+        borderWidth: 1,
+        borderTopWidth: 0,
+        borderColor: colors.gray,
+        borderBottomLeftRadius: 6,
+        borderBottomRightRadius: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
+    },
+    grip: { width: 36, height: 4, borderRadius: 2, backgroundColor: colors.muted },
+    handleText: { fontSize: 10, color: colors.muted, letterSpacing: 1 },
     nodeWrap: { position: 'absolute', width: SIZE, alignItems: 'center' },
     node: {
         width: SIZE,
