@@ -4,7 +4,7 @@ import { PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, TextIn
 import { defaultSession, promptFor, runCommand } from '../lib/cli';
 import { addressesOf, newIfaces, pingCheck } from '../lib/network';
 import { firstFreePort, shortPort } from '../lib/ports';
-import { colors } from '../theme';
+import { colors, themedStyles, useTheme } from '../theme';
 
 const SIZE = 64;
 const MIN_H = 260;
@@ -138,6 +138,7 @@ function DeviceNode(props) {
 }
 
 export default function NetworkBuilder({ onStateChange }) {
+  useTheme();
     const [devices, setDevices] = useState([]);
     const [links, setLinks] = useState([]);
     const [mode, setMode] = useState('move');
@@ -529,7 +530,7 @@ export default function NetworkBuilder({ onStateChange }) {
     </View>);
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
     wrap: {
         backgroundColor: colors.white,
         borderRadius: 6,
@@ -679,7 +680,7 @@ const styles = StyleSheet.create({
     inputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
     input: {
         flex: 1,
-        color: '#ffffff',
+        color: '#fdfdfd',
         fontFamily: MONO,
         fontSize: 12,
         padding: 0,

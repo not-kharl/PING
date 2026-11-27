@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { lessons } from '../../data/lessons';
 import { useAuth } from '../../lib/auth';
-import { colors } from '../../theme';
+import { colors, themedStyles, useTheme } from '../../theme';
 function Hero() {
     const { user } = useAuth();
     return (<View style={styles.hero}>
@@ -15,6 +15,7 @@ function Hero() {
     </View>);
 }
 export default function LessonsScreen() {
+  useTheme();
     return (<FlatList style={styles.list} ListHeaderComponent={Hero} contentContainerStyle={{ paddingBottom: 24 }} data={lessons} keyExtractor={(item) => item.id} renderItem={({ item }) => (<Pressable style={({ pressed }) => [styles.card, pressed && { opacity: 0.75 }]} onPress={() => router.push({ pathname: '/lesson/[id]', params: { id: item.id } })}>
           <View style={styles.iconBox}>
             <Ionicons name="wifi" size={22} color={colors.white}/>
@@ -26,7 +27,7 @@ export default function LessonsScreen() {
           <Ionicons name="chevron-forward" size={20} color={colors.muted}/>
         </Pressable>)}/>);
 }
-const styles = StyleSheet.create({
+const styles = themedStyles({
     list: { flex: 1, backgroundColor: colors.bgLight },
     hero: {
         backgroundColor: colors.navy,

@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { pingCheck } from '../lib/network';
-import { colors } from '../theme';
+import { colors, themedStyles, useTheme } from '../theme';
 import NetworkBuilder from './NetworkBuilder';
 
 const GATEWAY = '192.168.10.1';
@@ -84,6 +84,7 @@ const TASKS = [
 ];
 
 export default function LabChallenge({ onComplete }) {
+  useTheme();
     const [state, setState] = useState({ devices: [], links: [] });
 
     const p = parts(state.devices);
@@ -160,7 +161,7 @@ export default function LabChallenge({ onComplete }) {
     );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
     box: {
         backgroundColor: colors.white,
         borderRadius: 6,

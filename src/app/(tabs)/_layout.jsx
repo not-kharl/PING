@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useAuth } from '../../lib/auth';
-import { colors } from '../../theme';
+import { colors, useTheme } from '../../theme';
 
 export const unstable_settings = {
   anchor: 'index',
@@ -9,18 +9,20 @@ export const unstable_settings = {
 
 export default function TabsLayout() {
   const { user } = useAuth();
+  const { ui } = useTheme();
   const isAdmin = user?.role === 'admin';
 
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: colors.navy },
+        headerStyle: { backgroundColor: ui.header },
         headerTintColor: colors.white,
         headerTitleStyle: { fontWeight: '300', letterSpacing: 2 },
-        tabBarStyle: { backgroundColor: colors.black, borderTopWidth: 0 },
+        tabBarStyle: { backgroundColor: ui.bar, borderTopWidth: 0 },
         tabBarActiveTintColor: colors.orange,
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: { letterSpacing: 1, textTransform: 'uppercase', fontSize: 10 },
+        sceneStyle: { backgroundColor: ui.bg },
       }}
     >
       <Tabs.Screen

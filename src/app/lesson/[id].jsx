@@ -1,14 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import Reference from '../../components/Reference';
 import { lessons } from '../../data/lessons';
 import { useProgress } from '../../lib/progress';
-import { colors } from '../../theme';
+import { colors, themedStyles, useTheme } from '../../theme';
 
 export default function LessonDetail() {
+  useTheme();
   const { id } = useLocalSearchParams();
   const lesson = lessons.find((l) => l.id === id);
   const { ready, mark } = useProgress();
@@ -79,7 +80,7 @@ export default function LessonDetail() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   screen: { flex: 1, backgroundColor: colors.bgLight },
   hero: {
     backgroundColor: colors.navy,

@@ -1,8 +1,9 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import NetworkBuilder from '../../components/NetworkBuilder';
-import { colors } from '../../theme';
+import { colors, themedStyles, useTheme } from '../../theme';
 
 export default function PlaygroundScreen() {
+  useTheme();
   return (
     <ScrollView
       style={styles.screen}
@@ -16,7 +17,7 @@ export default function PlaygroundScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   screen: { flex: 1, backgroundColor: colors.bgLight },
   content: { padding: 16, alignItems: 'center' },
   inner: { width: '100%', maxWidth: 1600 },

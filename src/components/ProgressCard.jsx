@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { lessons } from '../data/lessons';
 import { useProgress } from '../lib/progress';
-import { colors } from '../theme';
+import { colors, themedStyles, useTheme } from '../theme';
 
 const GREEN = '#2e9b57';
 const shortTitle = (t) => t.replace(/^Module \d+ - /, '');
 
 function Chip({ label, done, locked, onPress }) {
-  const color = done ? GREEN : locked ? colors.muted : colors.navy;
+  const { ui } = useTheme();
+  const color = done ? GREEN : locked ? colors.muted : ui.text;
   return (
     <Pressable
       onPress={onPress}
@@ -26,6 +27,7 @@ function Chip({ label, done, locked, onPress }) {
 }
 
 export default function ProgressCard() {
+  useTheme();
   const { data, percent } = useProgress();
 
   const openLesson = (id) =>
@@ -98,7 +100,7 @@ export default function ProgressCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: {
     backgroundColor: colors.white,
     borderRadius: 6,

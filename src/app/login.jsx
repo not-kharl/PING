@@ -1,10 +1,11 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View, } from 'react-native';
 import { useAuth } from '../lib/auth';
-import { colors } from '../theme';
+import { colors, themedStyles, useTheme } from '../theme';
 
 export default function Login() {
+  const { ui } = useTheme();
     const { signIn, signUp } = useAuth();
     const { mode } = useLocalSearchParams();
     const [register, setRegister] = useState(mode === 'register');
@@ -25,7 +26,7 @@ export default function Login() {
             setError(err);
         setBusy(false);
     };
-    return (<KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.navy }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    return (<KeyboardAvoidingView style={{ flex: 1, backgroundColor: ui.header }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Text style={styles.small}>WELCOME TO</Text>
         <Text style={styles.title}>NETWORKING{'\n'}FUNDAMENTALS</Text>
@@ -62,7 +63,7 @@ export default function Login() {
       </ScrollView>
     </KeyboardAvoidingView>);
 }
-const styles = StyleSheet.create({
+const styles = themedStyles({
     scroll: {
         flexGrow: 1,
         alignItems: 'center',

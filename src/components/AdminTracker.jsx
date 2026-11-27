@@ -1,10 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { lessons } from '../data/lessons';
 import { useAuth } from '../lib/auth';
-import { colors } from '../theme';
+import { colors, themedStyles, useTheme } from '../theme';
 
 const GREEN = '#2e9b57';
 const PREFIX = 'ping.progress.v2.';
@@ -51,6 +51,7 @@ function statsFor(p) {
 }
 
 export default function AdminTracker() {
+  useTheme();
   const { users } = useAuth();
   const [progress, setProgress] = useState({});
 
@@ -186,7 +187,7 @@ export default function AdminTracker() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   card: {
     backgroundColor: colors.white,
     borderRadius: 6,

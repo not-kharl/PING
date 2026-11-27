@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import LabChallenge from '../../components/LabChallenge';
 import { quizzes } from '../../data/quizzes';
 import { useProgress } from '../../lib/progress';
-import { colors } from '../../theme';
+import { colors, themedStyles, useTheme } from '../../theme';
 
 export default function QuizScreen() {
+  const { dark } = useTheme();
   const { id } = useLocalSearchParams();
   const quiz = quizzes.find((q) => q.id === id);
   const { data, ready, isUnlocked, mark, saveScore } = useProgress();
@@ -169,7 +170,7 @@ export default function QuizScreen() {
           <Text style={styles.bigScore}>
             {score}/{total}
           </Text>
-          <Text style={[styles.verdict, { color: passed ? '#2e9b57' : '#c62828' }]}>
+          <Text style={[styles.verdict, { color: passed ? (dark ? '#4cc27f' : '#2e9b57') : (dark ? '#ff8a80' : '#c62828') }]}>
             {passed ? 'You passed!' : `You need ${quiz.passPercent}% to pass. Try again.`}
           </Text>
 
@@ -210,7 +211,7 @@ export default function QuizScreen() {
         <LabChallenge onComplete={() => mark(doneKey)} />
         {data[doneKey] && (
           <View style={styles.explain}>
-            <Text style={[styles.verdict, { color: '#2e9b57' }]}>
+            <Text style={[styles.verdict, { color: dark ? '#4cc27f' : '#2e9b57' }]}>
               Quiz complete! Your progress has been updated.
             </Text>
             <Pressable style={styles.primary} onPress={() => router.replace('/quizzes')}>
@@ -223,7 +224,7 @@ export default function QuizScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   screen: { flex: 1, backgroundColor: colors.bgLight },
   content: { padding: 20, width: '100%', maxWidth: 900, alignSelf: 'center' },
   center: {

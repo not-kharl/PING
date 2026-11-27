@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { ProgressProvider } from '../lib/progress';
-import { colors } from '../theme';
+import { ThemeProvider, colors, useTheme } from '../theme';
 
 export const unstable_settings = {
   anchor: 'welcome',
@@ -13,6 +13,7 @@ const PUBLIC_PATHS = ['/welcome', '/login'];
 
 function RootNav() {
   const { user, loading } = useAuth();
+  const { ui } = useTheme();
   const pathname = usePathname();
 
   // Signed out: always send visitors to the welcome page.
@@ -29,7 +30,7 @@ function RootNav() {
       <View
         style={{
           flex: 1,
-          backgroundColor: colors.navy,
+          backgroundColor: ui.header,
           alignItems: 'center',
           justifyContent: 'center',
         }}
@@ -42,9 +43,10 @@ function RootNav() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: colors.navy },
+        headerStyle: { backgroundColor: ui.header },
         headerTintColor: colors.white,
         headerTitleStyle: { fontWeight: '300' },
+        contentStyle: { backgroundColor: ui.bg },
       }}
     >
       <Stack.Protected guard={!!user}>
@@ -68,10 +70,12 @@ function RootNav() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <ProgressProvider>
-        <RootNav />
-      </ProgressProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ProgressProvider>
+          <RootNav />
+        </ProgressProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

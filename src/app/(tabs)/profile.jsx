@@ -1,10 +1,12 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import AdminTracker from '../../components/AdminTracker';
 import ProgressCard from '../../components/ProgressCard';
 import { useAuth } from '../../lib/auth';
-import { colors } from '../../theme';
+import { colors, themedStyles, useTheme } from '../../theme';
 
 export default function ProfileScreen() {
+  const { dark, toggle } = useTheme();
   const { user, signOut } = useAuth();
   if (!user) return null;
   const isAdmin = user.role === 'admin';
@@ -27,6 +29,23 @@ export default function ProfileScreen() {
         </View>
       </View>
 
+      {/* Appearance */}
+      <View style={styles.setting}>
+        <Ionicons name={dark ? 'moon' : 'sunny'} size={22} color={colors.orange} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.settingTitle}>Dark mode</Text>
+          <Text style={styles.settingSub}>
+            {dark ? 'On - easier on the eyes at night' : 'Off - light theme'}
+          </Text>
+        </View>
+        <Switch
+          value={dark}
+          onValueChange={toggle}
+          trackColor={{ false: '#c9ced6', true: colors.orange }}
+          thumbColor="#ffffff"
+        />
+      </View>
+
       {isAdmin ? <AdminTracker /> : <ProgressCard />}
 
       <Pressable style={styles.logout} onPress={signOut}>
@@ -36,7 +55,7 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   screen: { flex: 1, backgroundColor: colors.bgLight },
   content: { flexGrow: 1, padding: 20, gap: 16 },
   card: {
@@ -60,6 +79,18 @@ const styles = StyleSheet.create({
   username: { fontSize: 14, color: colors.muted, marginTop: 2 },
   badge: { marginTop: 12, paddingVertical: 4, paddingHorizontal: 12, borderRadius: 4 },
   badgeText: { color: colors.white, fontSize: 11, fontWeight: '700', letterSpacing: 2 },
+  setting: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.white,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.gray,
+    padding: 16,
+  },
+  settingTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
+  settingSub: { fontSize: 12, color: colors.muted, marginTop: 2 },
   logout: {
     backgroundColor: colors.navy,
     paddingVertical: 12,

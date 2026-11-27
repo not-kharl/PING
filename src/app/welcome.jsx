@@ -5,13 +5,12 @@ import {
   Platform,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
 import { lessons } from '../data/lessons';
-import { colors } from '../theme';
+import { colors, themedStyles, useTheme } from '../theme';
 
 const MONO = Platform.select({
   ios: 'Menlo',
@@ -125,10 +124,11 @@ function Button({ label, onPress, variant = 'solid', small }) {
 }
 
 function Section({ small, title, subtitle, children, onLayout, dark }) {
+  const { ui } = useTheme();
   return (
     <View
       onLayout={onLayout}
-      style={[styles.section, dark && { backgroundColor: colors.white }]}
+      style={[styles.section, dark && { backgroundColor: ui.surface }]}
     >
       <View style={styles.inner}>
         <Text style={styles.eyebrow}>{small}</Text>
@@ -141,6 +141,7 @@ function Section({ small, title, subtitle, children, onLayout, dark }) {
 }
 
 export default function Welcome() {
+  const { ui } = useTheme();
   const { width } = useWindowDimensions();
   const wide = width >= 860;
   const scroller = useRef(null);
@@ -161,7 +162,7 @@ export default function Welcome() {
   const snippet = SNIPPETS[pick];
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bgLight }}>
+    <View style={{ flex: 1, backgroundColor: ui.bg }}>
       {/* Nav bar */}
       <View style={styles.nav}>
         <View style={styles.navInner}>
@@ -385,7 +386,7 @@ export default function Welcome() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   nav: { backgroundColor: colors.black, paddingVertical: 12, paddingHorizontal: 16 },
   navInner: {
     width: '100%',

@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { useAuth } from '../../lib/auth';
-import { colors } from '../../theme';
+import { colors, themedStyles, useTheme } from '../../theme';
 
 export default function AdminScreen() {
+  useTheme();
   const { user, users, removeUser } = useAuth();
   const [error, setError] = useState('');
   const [confirmId, setConfirmId] = useState(null);
@@ -86,7 +87,7 @@ export default function AdminScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   list: { flex: 1, backgroundColor: colors.bgLight },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   denied: { color: colors.muted, fontSize: 16 },

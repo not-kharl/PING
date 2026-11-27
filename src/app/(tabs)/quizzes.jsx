@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { quizzes } from '../../data/quizzes';
 import { useProgress } from '../../lib/progress';
-import { colors } from '../../theme';
+import { colors, themedStyles, useTheme } from '../../theme';
 
 export default function QuizzesTab() {
+  const { dark } = useTheme();
   const { data, ready, isUnlocked } = useProgress();
   const [note, setNote] = useState('');
 
@@ -53,7 +54,7 @@ export default function QuizzesTab() {
             <View style={{ flex: 1 }}>
               <Text style={styles.title}>{item.title}</Text>
               <Text style={styles.subtitle}>{item.subtitle}</Text>
-              <Text style={[styles.status, done && { color: '#2e9b57' }]}>
+              <Text style={[styles.status, done && { color: dark ? '#4cc27f' : '#2e9b57' }]}>
                 {!open
                   ? `Locked - view Module ${item.lessonId} first`
                   : done
@@ -71,7 +72,7 @@ export default function QuizzesTab() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   list: { flex: 1, backgroundColor: colors.bgLight },
   heading: {
     fontSize: 12,

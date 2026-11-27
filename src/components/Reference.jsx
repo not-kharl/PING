@@ -1,8 +1,9 @@
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 import { reference } from '../data/reference';
-import { colors } from '../theme';
+import { colors, themedStyles, useTheme } from '../theme';
 
 export default function Reference() {
+  useTheme();
   return (
     <View style={styles.box}>
       <Text style={styles.label}>REFERENCE</Text>
@@ -18,7 +19,7 @@ export default function Reference() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = themedStyles({
   box: {
     maxWidth: 320,
     alignSelf: 'flex-end',
